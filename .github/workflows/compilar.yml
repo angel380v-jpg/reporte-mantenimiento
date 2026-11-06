@@ -1,0 +1,79 @@
+name: Compilar APK
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar el código
+        uses: actions/checkout@v4
+
+      - name: Ordenar archivos (tolera subida plana)
+        run: |
+          mkdir -p www resources
+          [ -f index.html ] && mv -f index.html www/ || true
+          for f in icon.png icon-foreground.png icon-background.png; do
+            [ -f "$f" ] && mv -f "$f" resources/ || true
+          done
+          echo "Contenido de www:" && ls -la www
+          echo "Contenido de resources:" && ls -la resources
+
+      - name: Preparar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Preparar Java (JDK 17)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Preparar Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Instalar dependencias
+        run: npm install
+
+      - name: Agregar plataforma Android
+        run: npx cap add android
+
+      - name: Generar íconos de la app
+        run: npx capacitor-assets generate --android
+
+      - name: Sincronizar proyecto
+        run: npx cap sync android
+
+      - name: Compilar APK (release)
+        run: cd android && chmod +x gradlew && ./gradlew assembleRelease
+
+      - name: Firmar el APK
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          echo "$KEYSTORE_BASE64" | base64 -d > keystore.jks
+          BT="$(ls -d "$ANDROID_SDK_ROOT"/build-tools/* | sort -V | tail -1)"
+          echo "Build-tools: $BT"
+          UNSIGNED="android/app/build/outputs/apk/release/app-release-unsigned.apk"
+          "$BT/zipalign" -f -p 4 "$UNSIGNED" app-aligned.apk
+          "$BT/apksigner" sign \
+            --ks keystore.jks \
+            --ks-pass pass:"$KEYSTORE_PASSWORD" \
+            --ks-key-alias "$KEY_ALIAS" \
+            --key-pass pass:"$KEY_PASSWORD" \
+            --out Mantenimiento-CPP.apk \
+            app-aligned.apk
+          "$BT/apksigner" verify --verbose Mantenimiento-CPP.apk
+          rm -f keystore.jks
+
+      - name: Publicar el APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Mantenimiento-CPP-apk
+          path: Mantenimiento-CPP.apk
+          if-no-files-found: error
