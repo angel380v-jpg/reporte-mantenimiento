@@ -51,12 +51,11 @@ jobs:
 
       - name: Firmar el APK
         env:
-          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
-          echo "$KEYSTORE_BASE64" | tr -d '[:space:]' | base64 -d > keystore.jks
+          if [ ! -f keystore.jks ]; then echo "Falta keystore.jks en el repositorio"; exit 1; fi
           BT="$(ls -d "$ANDROID_SDK_ROOT"/build-tools/* | sort -V | tail -1)"
           echo "Build-tools: $BT"
           UNSIGNED="android/app/build/outputs/apk/release/app-release-unsigned.apk"
@@ -69,7 +68,6 @@ jobs:
             --out Mantenimiento-CPP.apk \
             app-aligned.apk
           "$BT/apksigner" verify --verbose Mantenimiento-CPP.apk
-          rm -f keystore.jks
 
       - name: Publicar el APK
         uses: actions/upload-artifact@v4
