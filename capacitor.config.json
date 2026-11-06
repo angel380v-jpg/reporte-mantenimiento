@@ -1,0 +1,8 @@
+{
+  "appId": "ec.cpp.reportes",
+  "appName": "Mantenimiento CPP",
+  "webDir": "www",
+  "android": {
+    "allowMixedContent": false
+  }
+}

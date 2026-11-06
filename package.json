@@ -1,0 +1,16 @@
+{
+  "name": "mantenimiento-cpp",
+  "version": "1.0.0",
+  "description": "Reporte de Mantenimiento de Herramienta Eléctrica - CPP S.A.",
+  "private": true,
+  "dependencies": {
+    "@capacitor/android": "6.1.2",
+    "@capacitor/core": "6.1.2",
+    "@capacitor/filesystem": "6.0.1",
+    "@capacitor/share": "6.0.3"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "6.1.2",
+    "@capacitor/assets": "3.0.5"
+  }
+}
